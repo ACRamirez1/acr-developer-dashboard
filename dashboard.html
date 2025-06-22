@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ACR Developer - Lead Management Dashboard</title>
+    <link rel="icon" type="image/png" href="32-px.png" />
+    <link rel="apple-touch-icon" href="256.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="dashboard.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Admin Login</h2>
+          <span class="close" onclick="closeModal('loginModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="email">Email:</label>
+              <input type="email" id="email" required />
+            </div>
+            <div class="form-group">
+              <label for="password">Password:</label>
+              <input type="password" id="password" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+          </form>
+          <div
+            id="loginError"
+            class="error-message"
+            style="display: none"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <a href="index.html"
+            ><img
+              src="customcolor_textlogo_transparent_background.webp"
+              alt="ACR Developer Logo"
+              class="nav-logo-img"
+          /></a>
+        </div>
+        <ul class="nav-menu">
+          <li><a href="index.html">Website</a></li>
+          <li><a href="#dashboard" class="active">Dashboard</a></li>
+          <li><a href="#leads">Leads</a></li>
+          <li><a href="#analytics">Analytics</a></li>
+        </ul>
+        <div class="nav-auth">
+          <button
+            id="loginBtn"
+            onclick="showLoginModal()"
+            class="btn btn-primary"
+          >
+            Login
+          </button>
+          <button
+            id="logoutBtn"
+            onclick="handleLogout()"
+            class="btn btn-secondary"
+            style="display: none"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Dashboard Header -->
+    <section class="dashboard-header">
+      <div class="container">
+        <h1>Lead Management Dashboard</h1>
+        <p>Track and manage your client leads effectively</p>
+      </div>
+    </section>
+
+    <!-- Dashboard Stats -->
+    <section class="dashboard-stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="totalLeads">0</h3>
+              <p>Total Leads</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="newLeads">0</h3>
+              <p>New Leads</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-phone"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="contactedLeads">0</h3>
+              <p>Contacted</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="qualifiedLeads">0</h3>
+              <p>Qualified</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead Management -->
+    <section id="leads" class="leads-section">
+      <div class="container">
+        <div class="leads-header">
+          <h2>Lead Management</h2>
+          <div class="leads-actions">
+            <button
+              onclick="leadManager.exportLeads()"
+              class="btn btn-secondary"
+            >
+              <i class="fas fa-download"></i> Export CSV
+            </button>
+            <button onclick="clearAllLeads()" class="btn btn-danger">
+              <i class="fas fa-trash"></i> Clear All
+            </button>
+          </div>
+        </div>
+
+        <div class="leads-filters">
+          <select id="statusFilter" onchange="filterLeads()">
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+          </select>
+          <select id="serviceFilter" onchange="filterLeads()">
+            <option value="all">All Services</option>
+            <option value="wordpress">WordPress</option>
+            <option value="custom">Custom Development</option>
+            <option value="responsive">Responsive Design</option>
+            <option value="seo">SEO</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="other">Other</option>
+          </select>
+          <input
+            type="text"
+            id="searchLeads"
+            placeholder="Search leads..."
+            onkeyup="filterLeads()"
+          />
+        </div>
+
+        <div id="leadsContainer" class="leads-container">
+          <!-- Leads will be populated here by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Analytics Section -->
+    <section id="analytics" class="analytics-section">
+      <div class="container">
+        <h2>Analytics & Insights</h2>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Lead Sources</h3>
+            <div id="leadSourcesChart" class="chart-container">
+              <canvas id="sourcesChart"></canvas>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <h3>Service Interest</h3>
+            <div id="serviceInterestChart" class="chart-container">
+              <canvas id="servicesChart"></canvas>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <h3>Lead Timeline</h3>
+            <div id="leadTimelineChart" class="chart-container">
+              <canvas id="timelineChart"></canvas>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <h3>Conversion Rates</h3>
+            <div class="conversion-stats">
+              <div class="conversion-item">
+                <span class="conversion-label">New to Contacted</span>
+                <span class="conversion-rate" id="newToContacted">0%</span>
+              </div>
+              <div class="conversion-item">
+                <span class="conversion-label">Contacted to Qualified</span>
+                <span class="conversion-rate" id="contactedToQualified"
+                  >0%</span
+                >
+              </div>
+              <div class="conversion-item">
+                <span class="conversion-label">Overall Conversion</span>
+                <span class="conversion-rate" id="overallConversion">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marketing Tools -->
+    <section class="marketing-tools">
+      <div class="container">
+        <h2>Marketing Tools</h2>
+        <div class="tools-grid">
+          <div class="tool-card">
+            <div class="tool-icon">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <h3>Email Templates</h3>
+            <p>Pre-written email templates for follow-ups and proposals</p>
+            <button onclick="showEmailTemplates()" class="btn btn-primary">
+              View Templates
+            </button>
+          </div>
+          <div class="tool-card">
+            <div class="tool-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Follow-up Schedule</h3>
+            <p>Automated follow-up reminders and scheduling</p>
+            <button onclick="showFollowUpSchedule()" class="btn btn-primary">
+              Set Schedule
+            </button>
+          </div>
+          <div class="tool-card">
+            <div class="tool-icon">
+              <i class="fas fa-bullhorn"></i>
+            </div>
+            <h3>Social Media Content</h3>
+            <p>Content ideas and templates for social media marketing</p>
+            <button onclick="showSocialContent()" class="btn btn-primary">
+              Get Ideas
+            </button>
+          </div>
+          <div class="tool-card">
+            <div class="tool-icon">
+              <i class="fas fa-search"></i>
+            </div>
+            <h3>Lead Research</h3>
+            <p>Tools and strategies for finding potential clients</p>
+            <button onclick="showLeadResearch()" class="btn btn-primary">
+              Research Tools
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Email Templates Modal -->
+    <div id="emailTemplatesModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Email Templates</h3>
+          <span class="close" onclick="closeModal('emailTemplatesModal')"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body">
+          <div class="template-section">
+            <h4>Initial Follow-up</h4>
+            <textarea id="initialFollowup" rows="6" readonly>
+Hi [Name],
+
+Thank you for your interest in ACR Developer's web development services. I received your inquiry about [Service] and would love to discuss your project in more detail.
+
+I have a few questions to better understand your needs:
+- What is your timeline for this project?
+- Do you have a specific budget in mind?
+- Are there any particular features or functionality you're looking for?
+
+I'm available for a 15-minute call this week to discuss your project. Would you be interested in scheduling a time that works for you?
+
+Best regards,
+[Your Name]
+ACR Developer</textarea
+            >
+            <button
+              onclick="copyTemplate('initialFollowup')"
+              class="btn btn-small"
+            >
+              Copy Template
+            </button>
+          </div>
+
+          <div class="template-section">
+            <h4>Proposal Follow-up</h4>
+            <textarea id="proposalFollowup" rows="6" readonly>
+Hi [Name],
+
+I hope you had a chance to review the proposal I sent for your [Service] project. I wanted to follow up and see if you have any questions or if there's anything I can clarify.
+
+I'm excited about the opportunity to work with you and bring your vision to life. If you're ready to move forward, I can get started right away.
+
+Would you be available for a quick call to discuss next steps?
+
+Best regards,
+[Your Name]
+ACR Developer</textarea
+            >
+            <button
+              onclick="copyTemplate('proposalFollowup')"
+              class="btn btn-small"
+            >
+              Copy Template
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Follow-up Schedule Modal -->
+    <div id="followUpModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Follow-up Schedule</h3>
+          <span class="close" onclick="closeModal('followUpModal')"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body">
+          <div class="schedule-form">
+            <div class="form-group">
+              <label>First Follow-up (days after initial contact)</label>
+              <input
+                type="number"
+                id="firstFollowup"
+                value="2"
+                min="1"
+                max="7"
+              />
+            </div>
+            <div class="form-group">
+              <label>Second Follow-up (days after first)</label>
+              <input
+                type="number"
+                id="secondFollowup"
+                value="5"
+                min="1"
+                max="14"
+              />
+            </div>
+            <div class="form-group">
+              <label>Final Follow-up (days after second)</label>
+              <input
+                type="number"
+                id="finalFollowup"
+                value="7"
+                min="1"
+                max="21"
+              />
+            </div>
+            <button onclick="saveFollowUpSchedule()" class="btn btn-primary">
+              Save Schedule
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
