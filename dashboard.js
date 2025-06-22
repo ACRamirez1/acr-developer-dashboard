@@ -19,6 +19,51 @@ document.addEventListener("DOMContentLoaded", async function () {
   } else {
     showLoginModal();
   }
+
+  // Set the 'Overview' tab as active by default
+  switchTab("overview");
+
+  // Form Submissions
+  document
+    .getElementById("addLeadForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const leadData = {
+        name: formData.get("lead-name"),
+        company: formData.get("lead-company"),
+        email: formData.get("lead-email"),
+        phone: formData.get("lead-phone"),
+        website_url: formData.get("lead-website"),
+        service: formData.get("lead-service"),
+        status: formData.get("lead-status"),
+        lead_source: formData.get("lead-source"),
+        priority_level: formData.get("priority-level"),
+        notes: formData.get("lead-notes"),
+        contact_status: "not_contacted",
+        lead_stage: "new",
+      };
+      leadManager.addLead(leadData);
+      this.reset();
+    });
+
+  document
+    .getElementById("quickAddForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const prospectData = {
+        company: formData.get("prospect-company"),
+        website_url: formData.get("prospect-website"),
+        lead_source: "prospecting_hub",
+        priority_level: "medium",
+        contact_status: "not_contacted",
+        lead_stage: "new",
+        status: "new",
+      };
+      leadManager.quickAddProspect(prospectData);
+      this.reset();
+    });
 });
 
 // Authentication functions
@@ -85,24 +130,95 @@ function showDashboard() {
   document.getElementById("loginModal").style.display = "none";
 }
 
+// =================================================================================
+// NEW LEAD MANAGEMENT UI FUNCTIONS
+// =================================================================================
+
+function switchTab(tabName) {
+  // Hide all tab content
+  const tabContents = document.querySelectorAll(".tab-content");
+  tabContents.forEach((content) => {
+    content.style.display = "none";
+  });
+
+  // Deactivate all tab buttons
+  const tabButtons = document.querySelectorAll(".tab-button");
+  tabButtons.forEach((button) => {
+    button.classList.remove("active");
+  });
+
+  // Show the selected tab content
+  document.getElementById(tabName + "-tab").style.display = "block";
+
+  // Activate the selected tab button
+  const activeButton = document.querySelector(
+    `.tab-button[onclick="switchTab('${tabName}')"]`
+  );
+  activeButton.classList.add("active");
+
+  // Load data for the specific tab
+  if (tabName === "prospecting") {
+    leadManager.renderProspectingTable();
+  } else if (tabName === "contacted") {
+    leadManager.renderContactedTable();
+  } else {
+    leadManager.displayLeads(); // The original card view
+  }
+}
+
+function showAddLeadModal() {
+  document.getElementById("addLeadModal").style.display = "block";
+}
+
+function showLeadResearchHub() {
+  document.getElementById("leadResearchHubModal").style.display = "block";
+}
+
+function openResearchTool(tool) {
+  let url = "";
+  switch (tool) {
+    case "google-outdated":
+      url =
+        "https://www.google.com/search?q=intext:%22copyright+2019..2021%22+law+firm+in+new+york";
+      break;
+    case "linkedin-prospects":
+      url = "https://www.linkedin.com/sales/search/people";
+      break;
+    case "local-directory":
+      url = "https://www.google.com/search?q=local+chamber+of+commerce";
+      break;
+    case "competitor-analysis":
+      url = "https://www.google.com/search?q=similarweb+competitor+analysis";
+      break;
+  }
+  if (url) {
+    window.open(url, "_blank");
+  }
+}
+
 // Dashboard Analytics and Management
 
 // Update dashboard stats
 function updateDashboardStats() {
-  const leads = leadManager.leads;
-  const totalLeads = leads.length;
-  const newLeads = leads.filter((lead) => lead.status === "new").length;
-  const contactedLeads = leads.filter(
+  const totalLeads = leadManager.leads.length;
+  const newLeads = leadManager.leads.filter(
+    (lead) => lead.status === "new" || lead.status === null
+  ).length;
+  const contactedLeads = leadManager.leads.filter(
     (lead) => lead.status === "contacted"
   ).length;
-  const qualifiedLeads = leads.filter(
+  const qualifiedLeads = leadManager.leads.filter(
     (lead) => lead.status === "qualified"
   ).length;
+  const closedLeads = leadManager.leads.filter(
+    (lead) => lead.status === "closed_won"
+  ).length;
 
-  document.getElementById("totalLeads").textContent = totalLeads;
-  document.getElementById("newLeads").textContent = newLeads;
-  document.getElementById("contactedLeads").textContent = contactedLeads;
-  document.getElementById("qualifiedLeads").textContent = qualifiedLeads;
+  document.getElementById("total-leads-stat").textContent = totalLeads;
+  document.getElementById("new-leads-stat").textContent = newLeads;
+  document.getElementById("contacted-leads-stat").textContent = contactedLeads;
+  document.getElementById("qualified-leads-stat").textContent = qualifiedLeads;
+  document.getElementById("closed-leads-stat").textContent = closedLeads;
 
   // Update conversion rates
   const newToContacted =
@@ -239,7 +355,10 @@ function showLeadResearch() {
 }
 
 function closeModal(modalId) {
-  document.getElementById(modalId).style.display = "none";
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "none";
+  }
 }
 
 // Copy template to clipboard
@@ -455,7 +574,7 @@ window.exportEnhancedLeads = exportEnhancedLeads;
 const leadManager = {
   leads: [],
 
-  // Load leads from Supabase
+  // Load ALL leads from Supabase and categorize them
   async loadLeadsFromSupabase() {
     try {
       const { data, error } = await supabaseClient
@@ -466,209 +585,369 @@ const leadManager = {
       if (error) throw error;
 
       this.leads = data || [];
-      this.displayLeads();
+
+      // Initial render based on the active tab
+      this.updateActiveTabView();
       updateDashboardStats();
     } catch (error) {
       console.error("Error loading leads:", error);
-      // Fallback to localStorage if Supabase fails
-      this.loadLeadsFromLocalStorage();
     }
   },
 
-  // Load leads from localStorage (fallback)
-  loadLeadsFromLocalStorage() {
-    const storedLeads = localStorage.getItem("acr_leads");
-    this.leads = storedLeads ? JSON.parse(storedLeads) : [];
-    this.displayLeads();
-    updateDashboardStats();
-  },
-
-  // Save leads to Supabase
-  async saveLeadsToSupabase() {
-    try {
-      // First, clear existing leads
-      await supabaseClient.from("leads").delete().neq("id", 0);
-
-      // Then insert all current leads
-      if (this.leads.length > 0) {
-        const { error } = await supabaseClient.from("leads").insert(this.leads);
-
-        if (error) throw error;
-      }
-    } catch (error) {
-      console.error("Error saving leads to Supabase:", error);
-      // Fallback to localStorage
-      this.saveLeadsToLocalStorage();
+  updateActiveTabView() {
+    const activeTab = document.querySelector(".tab-button.active");
+    if (activeTab) {
+      const tabName = activeTab
+        .getAttribute("onclick")
+        .replace("switchTab('", "")
+        .replace("')", "");
+      switchTab(tabName);
+    } else {
+      this.displayLeads(); // Default to overview
     }
   },
 
-  // Save leads to localStorage (fallback)
-  saveLeadsToLocalStorage() {
-    localStorage.setItem("acr_leads", JSON.stringify(this.leads));
-  },
-
-  // Add new lead
-  async addLead(lead) {
+  // Add new lead from the main modal
+  async addLead(leadData) {
     try {
       const { data, error } = await supabaseClient
         .from("leads")
-        .insert([lead])
+        .insert([leadData])
         .select();
 
       if (error) throw error;
 
       this.leads.unshift(data[0]);
-      this.displayLeads();
+      this.updateActiveTabView();
       updateDashboardStats();
+      closeModal("addLeadModal");
     } catch (error) {
       console.error("Error adding lead:", error);
-      // Fallback to localStorage
-      lead.id = Date.now();
-      this.leads.unshift(lead);
-      this.saveLeadsToLocalStorage();
-      this.displayLeads();
-      updateDashboardStats();
+      alert("Failed to add lead. Check console for details.");
     }
   },
 
-  // Update lead status
-  async updateLeadStatus(leadId, status) {
+  // Quick add a prospect from the research hub
+  async quickAddProspect(prospectData) {
     try {
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("leads")
-        .update({ status: status })
-        .eq("id", leadId);
+        .insert([prospectData])
+        .select();
 
       if (error) throw error;
 
-      const lead = this.leads.find((l) => l.id === leadId);
-      if (lead) {
-        lead.status = status;
-        this.displayLeads();
-        updateDashboardStats();
+      this.leads.unshift(data[0]);
+      if (
+        document.getElementById("prospecting-tab").style.display === "block"
+      ) {
+        this.renderProspectingTable();
       }
+      updateDashboardStats();
+      document.getElementById("quickAddForm").reset();
     } catch (error) {
-      console.error("Error updating lead status:", error);
-      // Fallback to localStorage
-      const lead = this.leads.find((l) => l.id === leadId);
-      if (lead) {
-        lead.status = status;
-        this.saveLeadsToLocalStorage();
-        this.displayLeads();
-        updateDashboardStats();
-      }
+      console.error("Error adding prospect:", error);
+      alert("Failed to add prospect. Check console for details.");
     }
   },
 
-  // Delete lead
-  async deleteLead(leadId) {
+  // Update lead status and other fields
+  async updateLead(leadId, updatedFields) {
     try {
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("leads")
-        .delete()
-        .eq("id", leadId);
+        .update(updatedFields)
+        .eq("id", leadId)
+        .select();
 
       if (error) throw error;
 
-      this.leads = this.leads.filter((l) => l.id !== leadId);
-      this.displayLeads();
+      // Update the local cache
+      const index = this.leads.findIndex((l) => l.id === leadId);
+      if (index !== -1) {
+        this.leads[index] = { ...this.leads[index], ...data[0] };
+      }
+
+      this.updateActiveTabView();
       updateDashboardStats();
     } catch (error) {
-      console.error("Error deleting lead:", error);
-      // Fallback to localStorage
-      this.leads = this.leads.filter((l) => l.id !== leadId);
-      this.saveLeadsToLocalStorage();
-      this.displayLeads();
-      updateDashboardStats();
+      console.error("Error updating lead:", error);
     }
   },
 
-  // Display leads
+  // RENDER PROSPECTING TABLE
+  renderProspectingTable() {
+    const container = document.getElementById("prospectingTable");
+    const prospects = this.leads.filter(
+      (lead) =>
+        lead.contact_status === "not_contacted" || lead.contact_status === null
+    );
+
+    if (prospects.length === 0) {
+      container.innerHTML = `<p class="no-leads">No new prospects. Use the Research Hub to find some!</p>`;
+      return;
+    }
+
+    const tableHTML = `
+      <table class="prospect-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Contact</th>
+            <th>Website</th>
+            <th>Industry</th>
+            <th>Priority</th>
+            <th>Contact Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${prospects
+            .map(
+              (lead) => `
+            <tr>
+              <td>${lead.company || "N/A"}</td>
+              <td>${lead.name || "N/A"}</td>
+              <td><a href="${lead.website_url}" target="_blank">${
+                lead.website_url || "N/A"
+              }</a></td>
+              <td>${lead.industry || "N/A"}</td>
+              <td><span class="priority-badge priority-${
+                lead.priority_level
+              }">${lead.priority_level}</span></td>
+              <td>
+                <select class="contact-status-select" onchange="leadManager.updateLead(${
+                  lead.id
+                }, { contact_status: this.value })">
+                  <option value="not_contacted" ${
+                    lead.contact_status === "not_contacted" ? "selected" : ""
+                  }>Not Contacted</option>
+                  <option value="contacted" ${
+                    lead.contact_status === "contacted" ? "selected" : ""
+                  }>Contacted</option>
+                </select>
+              </td>
+              <td><button class="btn btn-small" onclick="leadManager.deleteLead(${
+                lead.id
+              })">Delete</button></td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `;
+    container.innerHTML = tableHTML;
+  },
+
+  // RENDER CONTACTED LEADS TABLE
+  renderContactedTable() {
+    const container = document.getElementById("contactedTable");
+    const contactedLeads = this.leads.filter(
+      (lead) =>
+        lead.contact_status === "contacted" || lead.first_contact_date !== null
+    );
+
+    if (contactedLeads.length === 0) {
+      container.innerHTML = `<p class="no-leads">No contacted leads yet. Update a prospect's status to see them here.</p>`;
+      return;
+    }
+
+    const tableHTML = `
+      <table class="prospect-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Contact</th>
+            <th>First Contact</th>
+            <th>Last Contact</th>
+            <th>Contact Count</th>
+            <th>Status</th>
+            <th>Next Follow-up</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${contactedLeads
+            .map(
+              (lead) => `
+            <tr>
+              <td>${lead.company || "N/A"}</td>
+              <td>${lead.name || "N/A"}</td>
+              <td>${
+                lead.first_contact_date
+                  ? new Date(lead.first_contact_date).toLocaleDateString()
+                  : "N/A"
+              }</td>
+              <td>${
+                lead.last_contact_date
+                  ? new Date(lead.last_contact_date).toLocaleDateString()
+                  : "N/A"
+              }</td>
+              <td>${lead.contact_count || 0}</td>
+              <td><span class="contact-status ${lead.status}">${
+                lead.status
+              }</span></td>
+              <td>${
+                lead.next_follow_up_date
+                  ? new Date(lead.next_follow_up_date).toLocaleDateString()
+                  : "Not Set"
+              }</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `;
+    container.innerHTML = tableHTML;
+  },
+
+  // ORIGINAL DISPLAYLEADS - can be kept for the overview tab
   displayLeads() {
     const leadsContainer = document.getElementById("leadsContainer");
     if (!leadsContainer) return;
 
-    if (this.leads.length === 0) {
-      leadsContainer.innerHTML = '<p class="no-leads">No leads found.</p>';
+    // You might want to filter what this view shows, e.g., only 'active' leads
+    const activeLeads = this.leads.filter((l) => l.lead_stage !== "archived");
+
+    if (activeLeads.length === 0) {
+      leadsContainer.innerHTML =
+        '<p class="no-leads">No active leads found.</p>';
       return;
     }
 
-    const leadsHTML = this.leads
+    const leadsHTML = activeLeads
       .map(
         (lead) => `
-            <div class="lead-card ${lead.status}">
-                <div class="lead-header">
-                    <h4>${lead.name}</h4>
-                    <span class="lead-status ${lead.status}">${
-          lead.status
-        }</span>
-                </div>
-                <div class="lead-details">
-                    <p><strong>Email:</strong> ${lead.email}</p>
-                    <p><strong>Company:</strong> ${lead.company || "N/A"}</p>
-                    <p><strong>Service:</strong> ${lead.service}</p>
-                    <p><strong>Date:</strong> ${new Date(
-                      lead.date || lead.created_at
-                    ).toLocaleDateString()}</p>
-                    <p><strong>Message:</strong> ${lead.message}</p>
-                </div>
-                <div class="lead-actions">
-                    <button onclick="leadManager.updateLeadStatus(${
-                      lead.id
-                    }, 'contacted')" class="btn btn-small">Mark Contacted</button>
-                    <button onclick="leadManager.updateLeadStatus(${
-                      lead.id
-                    }, 'qualified')" class="btn btn-small">Mark Qualified</button>
-                    <button onclick="leadManager.deleteLead(${
-                      lead.id
-                    })" class="btn btn-small btn-danger">Delete</button>
-                </div>
-            </div>
-        `
+      <div class="lead-card ${lead.status}">
+        <div class="priority-indicator ${lead.priority_level}"></div>
+        <div class="lead-header">
+          <h4>${lead.name}</h4>
+          <span class="lead-status ${lead.status}">${lead.status}</span>
+        </div>
+        <div class="lead-details">
+          <p><strong>Company:</strong> ${lead.company || "N/A"}</p>
+          <p><strong>Service:</strong> ${lead.service}</p>
+          <p class="contact-date">Added: ${new Date(
+            lead.created_at
+          ).toLocaleDateString()}</p>
+        </div>
+        <div class="lead-actions">
+          <button onclick="leadManager.updateLead(${
+            lead.id
+          }, { status: 'contacted' })" class="btn btn-small">Mark Contacted</button>
+          <button onclick="leadManager.updateLead(${
+            lead.id
+          }, { status: 'qualified' })" class="btn btn-small">Mark Qualified</button>
+          <button onclick="leadManager.deleteLead(${
+            lead.id
+          })" class="btn btn-small btn-danger">Delete</button>
+        </div>
+      </div>
+    `
       )
       .join("");
 
     leadsContainer.innerHTML = leadsHTML;
   },
 
-  // Export leads to CSV
-  exportLeads() {
-    const csvContent = this.convertToCSV(this.leads);
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `acr-leads-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+  // Delete lead function (can be refactored to use the new updateLead method for archival)
+  async deleteLead(leadId) {
+    if (
+      confirm(
+        "Are you sure you want to permanently delete this lead? This action cannot be undone."
+      )
+    ) {
+      try {
+        const { error } = await supabaseClient
+          .from("leads")
+          .delete()
+          .eq("id", leadId);
+
+        if (error) throw error;
+
+        this.leads = this.leads.filter((l) => l.id !== leadId);
+        this.updateActiveTabView();
+        updateDashboardStats();
+      } catch (error) {
+        console.error("Error deleting lead:", error);
+      }
+    }
   },
 
-  // Convert leads to CSV format
-  convertToCSV(leads) {
-    const headers = [
-      "Name",
-      "Email",
-      "Company",
-      "Service",
-      "Status",
-      "Date",
-      "Message",
-    ];
-    const csvRows = [headers.join(",")];
-
-    leads.forEach((lead) => {
-      const row = [
-        `"${lead.name}"`,
-        `"${lead.email}"`,
-        `"${lead.company || ""}"`,
-        `"${lead.service}"`,
-        `"${lead.status}"`,
-        `"${new Date(lead.date || lead.created_at).toLocaleDateString()}"`,
-        `"${lead.message.replace(/"/g, '""')}"`,
-      ];
-      csvRows.push(row.join(","));
-    });
-
-    return csvRows.join("\n");
-  },
+  // ... other functions like exportLeads, convertToCSV can remain
 };
+
+// Event Listeners
+document.addEventListener("DOMContentLoaded", () => {
+  const user = supabaseClient.auth.user();
+  if (user) {
+    showDashboard();
+    leadManager.loadLeadsFromSupabase();
+  }
+
+  // Set the 'Overview' tab as active by default
+  switchTab("overview");
+});
+
+// Form Submissions
+document.getElementById("addLeadForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  const leadData = {
+    name: formData.get("lead-name"),
+    company: formData.get("lead-company"),
+    email: formData.get("lead-email"),
+    phone: formData.get("lead-phone"),
+    website_url: formData.get("lead-website"),
+    service: formData.get("lead-service"),
+    status: formData.get("lead-status"),
+    lead_source: formData.get("lead-source"),
+    priority_level: formData.get("priority-level"),
+    notes: formData.get("lead-notes"),
+    contact_status: "not_contacted",
+    lead_stage: "new",
+  };
+  leadManager.addLead(leadData);
+});
+
+document
+  .getElementById("quickAddForm")
+  .addEventListener("submit", function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const prospectData = {
+      company: formData.get("prospect-company"),
+      website_url: formData.get("prospect-website"),
+      lead_source: "prospecting_hub",
+      priority_level: "medium",
+      contact_status: "not_contacted",
+      lead_stage: "new",
+      status: "new",
+    };
+    leadManager.quickAddProspect(prospectData);
+  });
+
+// Modal closing logic
+window.onclick = function (event) {
+  const loginModal = document.getElementById("loginModal");
+  const addLeadModal = document.getElementById("addLeadModal");
+  const researchHubModal = document.getElementById("leadResearchHubModal");
+
+  if (event.target == loginModal) {
+    closeModal("loginModal");
+  }
+  if (event.target == addLeadModal) {
+    closeModal("addLeadModal");
+  }
+  if (event.target == researchHubModal) {
+    closeModal("leadResearchHubModal");
+  }
+};
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = "none";
+  }
+}

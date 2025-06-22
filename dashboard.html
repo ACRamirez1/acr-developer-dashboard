@@ -189,6 +189,9 @@
         <div class="leads-header">
           <h2>Lead Management</h2>
           <div class="leads-actions">
+            <button onclick="showAddLeadModal()" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Add Lead
+            </button>
             <button
               onclick="leadManager.exportLeads()"
               class="btn btn-secondary"
@@ -201,32 +204,72 @@
           </div>
         </div>
 
-        <div class="leads-filters">
-          <select id="statusFilter" onchange="filterLeads()">
-            <option value="all">All Statuses</option>
-            <option value="new">New</option>
-            <option value="contacted">Contacted</option>
-            <option value="qualified">Qualified</option>
-          </select>
-          <select id="serviceFilter" onchange="filterLeads()">
-            <option value="all">All Services</option>
-            <option value="wordpress">WordPress</option>
-            <option value="custom">Custom Development</option>
-            <option value="responsive">Responsive Design</option>
-            <option value="seo">SEO</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="other">Other</option>
-          </select>
-          <input
-            type="text"
-            id="searchLeads"
-            placeholder="Search leads..."
-            onkeyup="filterLeads()"
-          />
-        </div>
+        <!-- Lead Management Tabs -->
+        <div class="tab-container">
+          <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('overview')">
+              Overview
+            </button>
+            <button class="tab-button" onclick="switchTab('prospecting')">
+              Prospecting
+            </button>
+            <button class="tab-button" onclick="switchTab('contacted')">
+              Contacted
+            </button>
+          </div>
 
-        <div id="leadsContainer" class="leads-container">
-          <!-- Leads will be populated here by JavaScript -->
+          <!-- Overview Tab -->
+          <div id="overview-tab" class="tab-content active">
+            <div class="leads-filters">
+              <select id="statusFilter" onchange="filterLeads()">
+                <option value="all">All Statuses</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="qualified">Qualified</option>
+              </select>
+              <select id="serviceFilter" onchange="filterLeads()">
+                <option value="all">All Services</option>
+                <option value="wordpress">WordPress</option>
+                <option value="custom">Custom Development</option>
+                <option value="responsive">Responsive Design</option>
+                <option value="seo">SEO</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="other">Other</option>
+              </select>
+              <input
+                type="text"
+                id="searchLeads"
+                placeholder="Search leads..."
+                onkeyup="filterLeads()"
+              />
+            </div>
+
+            <div id="leadsContainer" class="leads-container">
+              <!-- Leads will be populated here by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Prospecting Tab -->
+          <div id="prospecting-tab" class="tab-content">
+            <div class="prospecting-tools">
+              <button onclick="showLeadResearchHub()" class="btn btn-primary">
+                <i class="fas fa-search"></i> Lead Research Hub
+              </button>
+              <button onclick="bulkUpdateContacts()" class="btn btn-secondary">
+                <i class="fas fa-edit"></i> Bulk Update
+              </button>
+            </div>
+            <div id="prospectingTable" class="prospecting-table">
+              <!-- Prospecting table will be populated here -->
+            </div>
+          </div>
+
+          <!-- Contacted Tab -->
+          <div id="contacted-tab" class="tab-content">
+            <div id="contactedTable" class="contacted-table">
+              <!-- Contacted leads table will be populated here -->
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -433,6 +476,206 @@ ACR Developer</textarea
               Save Schedule
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lead Research Hub Modal -->
+    <div id="leadResearchHubModal" class="modal">
+      <div class="modal-content research-modal">
+        <div class="modal-header">
+          <h2>Lead Research Hub</h2>
+          <span class="close" onclick="closeModal('leadResearchHubModal')"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body">
+          <div class="research-section">
+            <h4>Quick Research Tools</h4>
+            <div class="research-tools">
+              <button
+                onclick="openResearchTool('google-outdated')"
+                class="btn btn-primary"
+              >
+                <i class="fas fa-search"></i> Find Outdated Websites
+              </button>
+              <button
+                onclick="openResearchTool('linkedin-prospects')"
+                class="btn btn-primary"
+              >
+                <i class="fab fa-linkedin"></i> LinkedIn Prospects
+              </button>
+              <button
+                onclick="openResearchTool('local-directory')"
+                class="btn btn-primary"
+              >
+                <i class="fas fa-building"></i> Local Business Directory
+              </button>
+              <button
+                onclick="openResearchTool('competitor-analysis')"
+                class="btn btn-primary"
+              >
+                <i class="fas fa-chart-line"></i> Competitor Analysis
+              </button>
+            </div>
+          </div>
+
+          <div class="research-section">
+            <h4>Research Strategy Checklist</h4>
+            <div class="strategy-checklist">
+              <label class="checkbox-item">
+                <input type="checkbox" id="strategy-1" />
+                <span
+                  >Search for businesses with outdated websites in target
+                  industry</span
+                >
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="strategy-2" />
+                <span>Check local Chamber of Commerce directory</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="strategy-3" />
+                <span>Review LinkedIn for potential prospects</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="strategy-4" />
+                <span>Analyze competitor client lists</span>
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" id="strategy-5" />
+                <span>Check Google My Business listings for poor websites</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="research-section">
+            <h4>Quick Add Prospect</h4>
+            <form id="quickAddForm" class="quick-add-form">
+              <div class="form-row">
+                <input
+                  type="text"
+                  id="quickCompany"
+                  placeholder="Company Name"
+                  required
+                />
+                <input
+                  type="text"
+                  id="quickContact"
+                  placeholder="Contact Name"
+                />
+              </div>
+              <div class="form-row">
+                <input type="email" id="quickEmail" placeholder="Email" />
+                <input type="text" id="quickPhone" placeholder="Phone" />
+              </div>
+              <div class="form-row">
+                <input type="url" id="quickWebsite" placeholder="Website URL" />
+                <select id="quickIndustry">
+                  <option value="">Select Industry</option>
+                  <option value="real-estate">Real Estate</option>
+                  <option value="legal">Legal</option>
+                  <option value="healthcare">Healthcare</option>
+                  <option value="retail">Retail</option>
+                  <option value="restaurant">Restaurant</option>
+                  <option value="construction">Construction</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <textarea
+                id="quickNotes"
+                placeholder="Research notes..."
+              ></textarea>
+              <button type="submit" class="btn btn-primary">
+                Add Prospect
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Lead Modal -->
+    <div id="addLeadModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add New Lead</h2>
+          <span class="close" onclick="closeModal('addLeadModal')"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body">
+          <form id="addLeadForm" class="add-lead-form">
+            <div class="form-group">
+              <label for="leadName">Contact Name *</label>
+              <input type="text" id="leadName" required />
+            </div>
+            <div class="form-group">
+              <label for="leadEmail">Email *</label>
+              <input type="email" id="leadEmail" required />
+            </div>
+            <div class="form-group">
+              <label for="leadCompany">Company</label>
+              <input type="text" id="leadCompany" />
+            </div>
+            <div class="form-group">
+              <label for="leadPhone">Phone</label>
+              <input type="tel" id="leadPhone" />
+            </div>
+            <div class="form-group">
+              <label for="leadWebsite">Website</label>
+              <input type="url" id="leadWebsite" />
+            </div>
+            <div class="form-group">
+              <label for="leadService">Service Needed</label>
+              <select id="leadService" required>
+                <option value="wordpress">WordPress Development</option>
+                <option value="custom">Custom Development</option>
+                <option value="responsive">Responsive Design</option>
+                <option value="seo">SEO</option>
+                <option value="maintenance">Website Maintenance</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadIndustry">Industry</label>
+              <select id="leadIndustry">
+                <option value="">Select Industry</option>
+                <option value="real-estate">Real Estate</option>
+                <option value="legal">Legal</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="retail">Retail</option>
+                <option value="restaurant">Restaurant</option>
+                <option value="construction">Construction</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadSource">Lead Source</label>
+              <select id="leadSource">
+                <option value="Manual Entry">Manual Entry</option>
+                <option value="Portfolio">Portfolio Website</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Google">Google Search</option>
+                <option value="Referral">Referral</option>
+                <option value="Cold Outreach">Cold Outreach</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadPriority">Priority Level</label>
+              <select id="leadPriority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="leadMessage">Message/Notes</label>
+              <textarea id="leadMessage" rows="4"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Lead</button>
+          </form>
         </div>
       </div>
     </div>
