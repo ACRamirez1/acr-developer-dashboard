@@ -556,22 +556,39 @@ ACR Developer</textarea
                 <input
                   type="text"
                   id="quickCompany"
+                  name="prospect-company"
                   placeholder="Company Name"
                   required
                 />
                 <input
                   type="text"
                   id="quickContact"
+                  name="prospect-contact"
                   placeholder="Contact Name"
                 />
               </div>
               <div class="form-row">
-                <input type="email" id="quickEmail" placeholder="Email" />
-                <input type="text" id="quickPhone" placeholder="Phone" />
+                <input
+                  type="email"
+                  id="quickEmail"
+                  name="prospect-email"
+                  placeholder="Email"
+                />
+                <input
+                  type="text"
+                  id="quickPhone"
+                  name="prospect-phone"
+                  placeholder="Phone"
+                />
               </div>
               <div class="form-row">
-                <input type="url" id="quickWebsite" placeholder="Website URL" />
-                <select id="quickIndustry">
+                <input
+                  type="url"
+                  id="quickWebsite"
+                  name="prospect-website"
+                  placeholder="Website URL"
+                />
+                <select id="quickIndustry" name="prospect-industry">
                   <option value="">Select Industry</option>
                   <option value="real-estate">Real Estate</option>
                   <option value="legal">Legal</option>
@@ -584,6 +601,7 @@ ACR Developer</textarea
               </div>
               <textarea
                 id="quickNotes"
+                name="prospect-notes"
                 placeholder="Research notes..."
               ></textarea>
               <button type="submit" class="btn btn-primary">
@@ -608,27 +626,27 @@ ACR Developer</textarea
           <form id="addLeadForm" class="add-lead-form">
             <div class="form-group">
               <label for="leadName">Contact Name *</label>
-              <input type="text" id="leadName" required />
+              <input type="text" id="leadName" name="lead-name" required />
             </div>
             <div class="form-group">
               <label for="leadEmail">Email *</label>
-              <input type="email" id="leadEmail" required />
+              <input type="email" id="leadEmail" name="lead-email" required />
             </div>
             <div class="form-group">
               <label for="leadCompany">Company</label>
-              <input type="text" id="leadCompany" />
+              <input type="text" id="leadCompany" name="lead-company" />
             </div>
             <div class="form-group">
               <label for="leadPhone">Phone</label>
-              <input type="tel" id="leadPhone" />
+              <input type="tel" id="leadPhone" name="lead-phone" />
             </div>
             <div class="form-group">
               <label for="leadWebsite">Website</label>
-              <input type="url" id="leadWebsite" />
+              <input type="url" id="leadWebsite" name="lead-website" />
             </div>
             <div class="form-group">
               <label for="leadService">Service Needed</label>
-              <select id="leadService" required>
+              <select id="leadService" name="lead-service" required>
                 <option value="wordpress">WordPress Development</option>
                 <option value="custom">Custom Development</option>
                 <option value="responsive">Responsive Design</option>
@@ -639,7 +657,7 @@ ACR Developer</textarea
             </div>
             <div class="form-group">
               <label for="leadIndustry">Industry</label>
-              <select id="leadIndustry">
+              <select id="leadIndustry" name="lead-industry">
                 <option value="">Select Industry</option>
                 <option value="real-estate">Real Estate</option>
                 <option value="legal">Legal</option>
@@ -652,7 +670,7 @@ ACR Developer</textarea
             </div>
             <div class="form-group">
               <label for="leadSource">Lead Source</label>
-              <select id="leadSource">
+              <select id="leadSource" name="lead-source">
                 <option value="Manual Entry">Manual Entry</option>
                 <option value="Portfolio">Portfolio Website</option>
                 <option value="LinkedIn">LinkedIn</option>
@@ -664,7 +682,7 @@ ACR Developer</textarea
             </div>
             <div class="form-group">
               <label for="leadPriority">Priority Level</label>
-              <select id="leadPriority">
+              <select id="leadPriority" name="priority-level">
                 <option value="low">Low</option>
                 <option value="medium" selected>Medium</option>
                 <option value="high">High</option>
@@ -672,7 +690,7 @@ ACR Developer</textarea
             </div>
             <div class="form-group">
               <label for="leadMessage">Message/Notes</label>
-              <textarea id="leadMessage" rows="4"></textarea>
+              <textarea id="leadMessage" name="lead-notes" rows="4"></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Add Lead</button>
           </form>
