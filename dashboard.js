@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zdXBhb2JrZWVjcm51cnRoYWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1NTgyNDgsImV4cCI6MjA2NjEzNDI0OH0.sLDji2S9iY61f1krbBrvn9EFfWL5ebu4BAXk6cnX17Q";
 
 // Initialize Supabase client
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Authentication state
 let currentUser = null;
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 async function checkAuth() {
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabaseClient.auth.getUser();
   currentUser = user;
   updateAuthUI();
 }
@@ -37,7 +37,7 @@ async function handleLogin(event) {
   const errorDiv = document.getElementById("loginError");
 
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: email,
       password: password,
     });
@@ -56,7 +56,7 @@ async function handleLogin(event) {
 }
 
 async function handleLogout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   currentUser = null;
   updateAuthUI();
   showLoginModal();
@@ -457,7 +457,7 @@ const leadManager = {
   // Load leads from Supabase
   async loadLeadsFromSupabase() {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("leads")
         .select("*")
         .order("created_at", { ascending: false });
@@ -486,11 +486,11 @@ const leadManager = {
   async saveLeadsToSupabase() {
     try {
       // First, clear existing leads
-      await supabase.from("leads").delete().neq("id", 0);
+      await supabaseClient.from("leads").delete().neq("id", 0);
 
       // Then insert all current leads
       if (this.leads.length > 0) {
-        const { error } = await supabase.from("leads").insert(this.leads);
+        const { error } = await supabaseClient.from("leads").insert(this.leads);
 
         if (error) throw error;
       }
@@ -509,7 +509,7 @@ const leadManager = {
   // Add new lead
   async addLead(lead) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("leads")
         .insert([lead])
         .select();
@@ -533,7 +533,7 @@ const leadManager = {
   // Update lead status
   async updateLeadStatus(leadId, status) {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from("leads")
         .update({ status: status })
         .eq("id", leadId);
@@ -562,7 +562,10 @@ const leadManager = {
   // Delete lead
   async deleteLead(leadId) {
     try {
-      const { error } = await supabase.from("leads").delete().eq("id", leadId);
+      const { error } = await supabaseClient
+        .from("leads")
+        .delete()
+        .eq("id", leadId);
 
       if (error) throw error;
 
