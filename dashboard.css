@@ -2,21 +2,45 @@
 
 /* Dashboard Header */
 .dashboard-header {
-  background: linear-gradient(135deg, #2d0a0f 0%, #4a0e1a 50%, #1a0608 100%);
+  background: linear-gradient(
+      135deg,
+      rgba(45, 10, 15, 0.8) 0%,
+      rgba(74, 14, 26, 0.8) 50%,
+      rgba(26, 6, 8, 0.8) 100%
+    ),
+    url("logo.gif");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: white;
-  padding: 120px 0 60px;
+  padding: 300px 0;
   text-align: center;
 }
 
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.hero-logo {
+  max-width: 300px;
+  height: auto;
+  margin-bottom: 1rem;
+}
+
 .dashboard-header h1 {
-  font-size: 2.5rem;
+  font-size: 3rem;
   margin-bottom: 1rem;
   font-weight: 700;
+  text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 .dashboard-header p {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   opacity: 0.9;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 /* Dashboard Stats */
@@ -602,9 +626,9 @@
 }
 
 .nav-logo-img {
-  height: 40px;
+  height: 80px;
   width: auto;
-  max-width: 200px;
+  max-width: 400px;
 }
 
 .nav-menu {
@@ -648,11 +672,20 @@
 
 /* Authentication Modal */
 #loginModal .modal-content {
-  max-width: 400px;
+  max-width: 480px;
+}
+
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  margin: auto;
 }
 
 .form-group {
   margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 .form-group label {
@@ -660,6 +693,7 @@
   margin-bottom: 0.5rem;
   color: #1e293b;
   font-weight: 500;
+  text-align: left;
 }
 
 .form-group input {
@@ -669,6 +703,9 @@
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
+  max-width: 300px;
+  margin: 0 auto;
+  display: block;
 }
 
 .form-group input:focus {
