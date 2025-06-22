@@ -1,4 +1,5 @@
 // Supabase Configuration
+// Force new build on Vercel to clear cache
 const SUPABASE_URL = "https://osupaobkeecrnurthadf.supabase.co";
 const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9zdXBhb2JrZWVjcm51cnRoYWRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1NTgyNDgsImV4cCI6MjA2NjEzNDI0OH0.sLDji2S9iY61f1krbBrvn9EFfWL5ebu4BAXk6cnX17Q";
